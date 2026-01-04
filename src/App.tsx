@@ -1,133 +1,151 @@
-import React, { useState, useEffect } from 'react';
-import { auth } from './firebase';
-import { onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import React, { useState } from 'react';
+import { Toaster } from 'react-hot-toast';
+import { motion, AnimatePresence } from 'framer-motion';
+import { UserProvider, useUser } from './contexts/UserContext';
+import { ThemeProvider } from './contexts/ThemeContext';
+import { Sidebar } from './components/layout';
 
-import SignIn from './components/SignIn';
-import SignUp from './components/SignUp';
-import Dashboard from './components/Dashboard';
-import Navbar from './components/Navbar';
-import WorkoutHistoryPage from './components/WorkoutHistoryPage';
+// Pages (we'll create these next)
+import AuthPage from './pages/AuthPage';
+import DashboardPage from './pages/DashboardPage';
+import WorkoutsPage from './pages/WorkoutsPage';
+import ExercisesPage from './pages/ExercisesPage';
+import GoalsPage from './pages/GoalsPage';
+import ProgressPage from './pages/ProgressPage';
+import NutritionPage from './pages/NutritionPage';
+import AchievementsPage from './pages/AchievementsPage';
+import ProfilePage from './pages/ProfilePage';
+import SettingsPage from './pages/SettingsPage';
+import OnboardingPage from './pages/OnboardingPage';
 
 import './App.css';
 
-const App: React.FC = () => {
-  const [user, setUser] = useState<any>(null);
-  const [showSignUp, setShowSignUp] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState<'dashboard' | 'history'>('dashboard');
+// Main App Content (inside providers)
+const AppContent: React.FC = () => {
+  const { user, isLoading, isProfileComplete } = useUser();
+  const [currentPath, setCurrentPath] = useState('/dashboard');
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setIsLoading(false);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-    } catch (error) {
-      console.error('Error logging out:', error);
-    }
-  };
-
-  const handleGoogleSignIn = async () => {
-    const provider = new GoogleAuthProvider();
-    try {
-      await signInWithPopup(auth, provider);
-    } catch (error) {
-      console.error('Error with Google Sign-In:', error);
-    }
-  };
-
-  const handleNavigate = (page: 'dashboard' | 'history') => {
-    setCurrentPage(page);
-  };
-
+  // Show loading screen
   if (isLoading) {
     return (
-      <div className="loading-container">
-        <div className="loading-spinner"></div>
-        <p>Loading...</p>
+      <div className="loading-screen">
+        <motion.div
+          className="loading-content"
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          <div className="loading-logo">💪</div>
+          <div className="loading-spinner-container">
+            <div className="loading-spinner" />
+          </div>
+          <p className="loading-text">Loading FitTrack Pro...</p>
+        </motion.div>
       </div>
     );
   }
-  
+
+  // Not logged in - show auth page
+  if (!user) {
+    return <AuthPage />;
+  }
+
+  // Logged in but no profile - show onboarding
+  if (!isProfileComplete) {
+    return <OnboardingPage />;
+  }
+
+  // Render current page based on path
+  const renderPage = () => {
+    switch (currentPath) {
+      case '/dashboard':
+        return <DashboardPage />;
+      case '/workouts':
+        return <WorkoutsPage />;
+      case '/exercises':
+        return <ExercisesPage />;
+      case '/goals':
+        return <GoalsPage />;
+      case '/progress':
+        return <ProgressPage />;
+      case '/nutrition':
+        return <NutritionPage />;
+      case '/achievements':
+        return <AchievementsPage />;
+      case '/profile':
+        return <ProfilePage />;
+      case '/settings':
+        return <SettingsPage />;
+      default:
+        return <DashboardPage />;
+    }
+  };
+
+  // Logged in with complete profile - show main app
   return (
-    <div className="app-wrapper">
-      <div className="background-animation">
-        <div className="floating-shapes">
-          <div className="shape shape-1"></div>
-          <div className="shape shape-2"></div>
-          <div className="shape shape-3"></div>
-          <div className="shape shape-4"></div>
-        </div>
-      </div>
-
-      {user ? (
-        <div className="app-container fullscreen">
-          <Navbar user={user} onLogout={handleLogout} onNavigate={handleNavigate} />
-          <div className="dashboard-wrapper">
-            {currentPage === 'dashboard' && <Dashboard user={user} />}
-            {currentPage === 'history' && <WorkoutHistoryPage />}
-          </div>
-        </div>
-      ) : (
-        <div className="auth-page">
-          <div className="auth-page-left">
-            <div className="logo-section">
-              <div className="app-logo">💪</div>
-              <h1 className="app-title">Fitness Tracker</h1>
-              <p className="app-subtitle">Your personal journey to a healthier, stronger you.</p>
-            </div>
-          </div>
-          <div className="auth-page-right">
-            <div className="form-container">
-              <div className="form-tabs">
-                <button 
-                  className={`tab-button ${!showSignUp ? 'active' : ''}`}
-                  onClick={() => setShowSignUp(false)}
-                >
-                  Sign In
-                </button>
-                <button 
-                  className={`tab-button ${showSignUp ? 'active' : ''}`}
-                  onClick={() => setShowSignUp(true)}
-                >
-                  Sign Up
-                </button>
-              </div>
-
-              <div className="forms-wrapper">
-                {showSignUp ? (
-                  <div className="form-section active">
-                    <SignUp />
-                  </div>
-                ) : (
-                  <div className="form-section active">
-                    <SignIn />
-                  </div>
-                )}
-              </div>
-
-              <div className="auth-footer">
-                <div className="divider">
-                  <span>or continue with</span>
-                </div>
-                
-                <div className="social-login">
-                  <button className="social-btn google" onClick={handleGoogleSignIn}>
-                    <span className="social-icon">G</span>
-                    Google
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+    <div className="app-layout">
+      <Sidebar currentPath={currentPath} onNavigate={setCurrentPath} />
+      <main className="main-content">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentPath}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.2 }}
+            className="page-container"
+          >
+            {renderPage()}
+          </motion.div>
+        </AnimatePresence>
+      </main>
     </div>
+  );
+};
+
+// Root App Component with Providers
+const App: React.FC = () => {
+  return (
+    <ThemeProvider>
+      <UserProvider>
+        <div className="app-wrapper">
+          {/* Background Animation */}
+          <div className="background-animation">
+            <div className="gradient-orb orb-1" />
+            <div className="gradient-orb orb-2" />
+            <div className="gradient-orb orb-3" />
+          </div>
+
+          <AppContent />
+
+          {/* Toast Notifications */}
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              duration: 4000,
+              style: {
+                background: 'var(--background-card)',
+                color: 'var(--text-primary)',
+                border: '1px solid var(--divider)',
+                borderRadius: '12px',
+              },
+              success: {
+                iconTheme: {
+                  primary: '#10B981',
+                  secondary: 'white',
+                },
+              },
+              error: {
+                iconTheme: {
+                  primary: '#EF4444',
+                  secondary: 'white',
+                },
+              },
+            }}
+          />
+        </div>
+      </UserProvider>
+    </ThemeProvider>
   );
 };
 
