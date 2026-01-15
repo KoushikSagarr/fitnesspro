@@ -13,12 +13,12 @@ import {
     type LucideIcon
 } from 'lucide-react';
 import { signOut } from 'firebase/auth';
-import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { auth } from '../firebase';
 import { useTheme } from '../contexts/ThemeContext';
 import { useUser } from '../contexts/UserContext';
 import { Card, CardContent, Button } from '../components/ui';
+import { ConnectedApps } from '../components/integrations';
 import './SettingsPage.css';
 
 interface ToggleItem {
@@ -48,14 +48,13 @@ interface SettingsSection {
 const SettingsPage: React.FC = () => {
     const { theme, toggleTheme } = useTheme();
     const { user, userProfile } = useUser();
-    const navigate = useNavigate();
     const [notifications, setNotifications] = useState(true);
 
     const handleSignOut = async () => {
         try {
             await signOut(auth);
             toast.success('Signed out successfully');
-            navigate('/auth');
+            // Page will redirect automatically when auth state changes
         } catch (error) {
             toast.error('Failed to sign out');
         }
@@ -96,7 +95,7 @@ const SettingsPage: React.FC = () => {
                     label: 'Edit Profile',
                     description: 'Update your personal information',
                     action: 'link',
-                    onClick: () => navigate('/profile'),
+                    onClick: () => toast('Use the Profile tab in the sidebar'),
                 },
                 {
                     icon: Shield,
@@ -152,12 +151,15 @@ const SettingsPage: React.FC = () => {
                             <h3>{userProfile?.displayName || 'User'}</h3>
                             <p>{user?.email}</p>
                         </div>
-                        <Button variant="outline" size="sm" onClick={() => navigate('/profile')}>
+                        <Button variant="outline" size="sm" onClick={() => toast('Use the Profile tab in the sidebar')}>
                             Edit
                         </Button>
                     </div>
                 </CardContent>
             </Card>
+
+            {/* Connected Apps */}
+            <ConnectedApps />
 
             {/* Settings Sections */}
             <div className="settings-sections">

@@ -305,3 +305,39 @@ export interface GoalFormData {
     frequency: 'daily' | 'weekly' | 'monthly';
     endDate?: Date;
 }
+
+// Strava Integration Types
+export interface StravaTokens {
+    accessToken: string;
+    refreshToken: string;
+    expiresAt: number;
+    athleteId: number;
+    connectedAt: Date;
+}
+
+export interface StravaActivity {
+    id: number;
+    name: string;
+    type: string;
+    sport_type: string;
+    start_date: string;
+    elapsed_time: number; // seconds
+    moving_time: number; // seconds
+    distance: number; // meters
+    total_elevation_gain: number;
+    average_speed: number;
+    max_speed: number;
+    average_heartrate?: number;
+    max_heartrate?: number;
+    calories?: number;
+}
+
+export interface ConnectedApp {
+    id: string;
+    name: string;
+    icon: string;
+    connected: boolean;
+    lastSync?: Date;
+    athleteName?: string;
+}
+

@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UserProvider, useUser } from './contexts/UserContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { Sidebar } from './components/layout';
 
-// Pages (we'll create these next)
+// Pages
 import AuthPage from './pages/AuthPage';
 import DashboardPage from './pages/DashboardPage';
 import WorkoutsPage from './pages/WorkoutsPage';
@@ -17,13 +17,27 @@ import AchievementsPage from './pages/AchievementsPage';
 import ProfilePage from './pages/ProfilePage';
 import SettingsPage from './pages/SettingsPage';
 import OnboardingPage from './pages/OnboardingPage';
+import StravaCallback from './pages/StravaCallback';
 
 import './App.css';
 
 // Main App Content (inside providers)
 const AppContent: React.FC = () => {
   const { user, isLoading, isProfileComplete } = useUser();
-  const [currentPath, setCurrentPath] = useState('/dashboard');
+  const [currentPath, setCurrentPath] = useState(() => {
+    // Check if we're on the Strava callback URL
+    if (window.location.pathname === '/strava/callback') {
+      return '/strava/callback';
+    }
+    return '/dashboard';
+  });
+
+  // Listen for URL changes (for OAuth callbacks)
+  useEffect(() => {
+    if (window.location.pathname === '/strava/callback') {
+      setCurrentPath('/strava/callback');
+    }
+  }, []);
 
   // Show loading screen
   if (isLoading) {
@@ -57,6 +71,19 @@ const AppContent: React.FC = () => {
 
   // Render current page based on path
   const renderPage = () => {
+    // Handle Strava callback separately (no sidebar needed)
+    if (currentPath === '/strava/callback') {
+      return (
+        <StravaCallback
+          onComplete={() => {
+            // Clear the URL and navigate to settings
+            window.history.replaceState({}, '', '/');
+            setCurrentPath('/settings');
+          }}
+        />
+      );
+    }
+
     switch (currentPath) {
       case '/dashboard':
         return <DashboardPage />;
